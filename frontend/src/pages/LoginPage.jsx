@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Star, Package, Heart, CreditCard, Truck, ArrowRight, Sparkles } from 'lucide-react';
-import { orderApi } from '../services/orderService';
 import { cartService } from '../services/cartService';
 import ErrorBoundary from '../components/ErrorBoundary.jsx';
 
