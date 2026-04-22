@@ -1,24 +1,8 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import StoreLanding from './pages/StoreLanding.jsx';
-import ShopPage from './pages/ShopPage.jsx';
-import ProductDetailsPage from './pages/ProductDetailsPage.jsx';
-import CartPage from './pages/CartPage.jsx';
-import CheckoutPage from './pages/CheckoutPage.jsx';
-import AdminProductPage from './pages/AdminProductPage.jsx';
-import LoginPage from './pages/LoginPage.jsx';
-import RegisterPage from './pages/RegisterPage.jsx';
-import ProfilePage from './pages/ProfilePage.jsx';
-import AdminUsersPage from './pages/AdminUsersPage.jsx';
-import OrdersPage from './pages/OrdersPage.jsx';
-import ReviewsPage from './pages/ReviewsPage.jsx';
-import DealsPage from './pages/DealsPage.jsx';
-import AdminPromotionsPage from './pages/AdminPromotionsPage.jsx';
-import AdminSuppliersPage from './pages/AdminSuppliersPage.jsx';
-import CustomerDashboard from './pages/CustomerDashboard.jsx';
-import SupplierDashboard from './pages/SupplierDashboard.jsx';
-import SidebarLayout from './components/SidebarLayout.jsx';
-import ErrorBoundary from './components/ErrorBoundary.jsx';
+import RegisterPage from "./pages/RegisterPage.jsx";
+import LoginPage from "./pages/LoginPage.jsx";
+import ProfilePage from "./pages/ProfilePage.jsx";
 
 const ProtectedRoute = ({ children, requireAdmin = false, requireSupplier = false }) => {
     const token = localStorage.getItem('pinkpetals_token');
