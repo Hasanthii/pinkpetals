@@ -2,11 +2,21 @@ package com.SmartCommerce.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import lombok.Builder;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+    @Index(name = "idx_user_email", columnList = "email"),
+    @Index(name = "idx_user_username", columnList = "username")
+})
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class User {
 
@@ -16,28 +26,28 @@ public class User {
 
     @NotBlank(message = "Username is required")
     @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-    @Column(unique = true, nullable = false, length = 50)
+    @Column(nullable = false, unique = true, length = 50)
     private String username;
 
     @NotBlank(message = "Email is required")
     @Email(message = "Email must be a valid email address")
     @Size(max = 255, message = "Email must not exceed 255 characters")
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true, length = 255)
     private String email;
 
     @NotBlank(message = "Password is required")
     @Size(min = 6, max = 255, message = "Password must be between 6 and 255 characters")
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String password;
 
     @NotBlank(message = "First name is required")
     @Size(max = 100, message = "First name must not exceed 100 characters")
-    @Column(name = "first_name", length = 100)
+    @Column(name = "first_name", nullable = false, length = 100)
     private String firstName;
 
     @NotBlank(message = "Last name is required")
     @Size(max = 100, message = "Last name must not exceed 100 characters")
-    @Column(name = "last_name", length = 100)
+    @Column(name = "last_name", nullable = false, length = 100)
     private String lastName;
 
     @Size(max = 20, message = "Phone must not exceed 20 characters")
@@ -48,68 +58,40 @@ public class User {
     @Column(length = 500)
     private String address;
 
+    @NotNull(message = "Role is required")
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
     private Role role = Role.CUSTOMER;
 
     @Column(name = "is_active", nullable = false)
+    @Builder.Default
     private Boolean isActive = true;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     public enum Role {
-        ADMIN, CUSTOMER, SUPPLIER, SUPPORT_STAFF
+        ADMIN,
+        CUSTOMER,
+        SUPPORT_STAFF,
+        SUPPLIER
     }
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+    public String getFullName() {
+        return firstName + " " + lastName;
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    public boolean isAdmin() {
+        return this.role == Role.ADMIN;
     }
 
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-
-    public String getFirstName() { return firstName; }
-    public void setFirstName(String firstName) { this.firstName = firstName; }
-
-    public String getLastName() { return lastName; }
-    public void setLastName(String lastName) { this.lastName = lastName; }
-
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
-
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
-
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
-
-    public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public boolean isCustomer() {
+        return this.role == Role.CUSTOMER;
+    }
 }
