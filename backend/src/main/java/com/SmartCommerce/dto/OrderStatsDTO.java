@@ -1,29 +1,18 @@
 package com.SmartCommerce.dto;
 
-import com.SmartCommerce.entity.OrderItem;
-
 import java.math.BigDecimal;
+import java.util.Map;
 
-public record OrderItemDTO(
-        Long id,
-        Long productId,
-        String productName,
-        String productBrand,
-        String productImageUrl,
-        Integer quantity,
-        BigDecimal unitPrice,
-        BigDecimal subtotal
+public record OrderStatsDTO(
+        long totalOrders,
+        long pendingOrders,
+        long processingOrders,
+        long shippedOrders,
+        long deliveredOrders,
+        long cancelledOrders,
+        BigDecimal totalRevenue,
+        BigDecimal averageOrderValue,
+        Map<String, Long> ordersByStatus,
+        Map<String, BigDecimal> revenueByMonth
 ) {
-    public static OrderItemDTO fromEntity(OrderItem item) {
-        return new OrderItemDTO(
-                item.getId(),
-                item.getProduct().getId(),
-                item.getProduct().getName(),
-                item.getProduct().getBrand(),
-                item.getProduct().getImageUrl(),
-                item.getQuantity(),
-                item.getUnitPrice(),
-                item.getSubtotal()
-        );
-    }
 }
