@@ -1,21 +1,12 @@
 package com.SmartCommerce.exception;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+public class ForbiddenException extends RuntimeException {
 
-import java.time.LocalDateTime;
+    public ForbiddenException(String message) {
+        super(message);
+    }
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ErrorResponse {
-
-    private LocalDateTime timestamp;
-    private int status;
-    private String error;
-    private String message;
-    private String path;
+    public ForbiddenException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
