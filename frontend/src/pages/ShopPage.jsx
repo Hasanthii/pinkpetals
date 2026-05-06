@@ -6,7 +6,11 @@ import ProductCard from '../components/ProductCard';
 import ProductFilters from '../components/ProductFilters';
 import { ProductGridSkeleton } from '../components/SkeletonLoader';
 import ErrorBoundary from '../components/ErrorBoundary';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, ShoppingBag } from 'lucide-react';
+import MiniCartDrawer from '../components/MiniCartDrawer';
+import Navbar from '../components/Navbar';
+import { useSkinProfile } from '../context/SkinProfileContext';
+import { getBatchProductRecommendations } from '../services/recommendationService';
 
 const STATIC_PRODUCTS = [
     { id: 1, name: 'Radiance Renewal Serum', brand: 'Pink Petals', category: 'Serum', price: 3500, stockQuantity: 20, imageUrl: '' },
@@ -46,6 +50,22 @@ const ShopPageContent = () => {
     const [sortBy, setSortBy] = useState('name-asc');
     const [toast, setToast] = useState('');
     const [toastVisible, setToastVisible] = useState(false);
+    const [cartOpen, setCartOpen] = useState(false);
+    const [cartItems, setCartItems] = useState(() => cartService.getCart());
+    const [cartCount, setCartCount] = useState(() => cartService.getCartItemCount());
+    const { skinProfile } = useSkinProfile();
+    const [recommendations, setRecommendations] = useState({});
+
+    const refreshCart = () => {
+        setCartItems(cartService.getCart());
+        setCartCount(cartService.getCartItemCount());
+    };
+
+    useEffect(() => {
+        const onCartUpdated = () => refreshCart();
+        window.addEventListener('cartUpdated', onCartUpdated);
+        return () => window.removeEventListener('cartUpdated', onCartUpdated);
+    }, []);
 
     const fetchProducts = useCallback(async () => {
         setLoading(true);
@@ -63,6 +83,18 @@ const ShopPageContent = () => {
     useEffect(() => {
         fetchProducts();
     }, [fetchProducts]);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchRecommendations = async () => {
+            if (products.length > 0 && skinProfile) {
+                const results = await getBatchProductRecommendations(products, skinProfile);
+                if (isMounted) setRecommendations(results);
+            }
+        };
+        fetchRecommendations();
+        return () => { isMounted = false; };
+    }, [products, skinProfile]);
 
     const handleSearch = useCallback(async (query) => {
         setSearchQuery(query);
@@ -125,14 +157,9 @@ const ShopPageContent = () => {
     const displayedProducts = useMemo(() => sortProducts(products, sortBy), [products, sortBy]);
 
     return (
+        <>
         <div style={{ fontFamily: 'Jost, sans-serif', background: '#fffaf9', minHeight: '100vh' }}>
-            <div
-                className="w-full text-center py-2.5 text-xs tracking-[0.15em] uppercase text-white"
-                style={{ background: 'linear-gradient(90deg, #b76e79, #c9898a, #b76e79)', fontFamily: 'Jost, sans-serif' }}
-            >
-                Free shipping on orders over LKR 5,000 &nbsp;|&nbsp; Use code <strong>GLOW10</strong> for 10% off
-            </div>
-
+            <Navbar />
             <div className="max-w-7xl mx-auto px-6 py-10">
                 <div className="text-center mb-8">
                     <p
@@ -203,6 +230,7 @@ const ShopPageContent = () => {
                                     key={p.id}
                                     product={p}
                                     onAddToCart={handleAddToCart}
+                                    recommendationStatus={recommendations[p.id]}
                                 />
                             ))}
                         </div>
@@ -210,6 +238,31 @@ const ShopPageContent = () => {
                 )}
             </div>
         </div>
+
+        {/* Floating cart button */}
+        {cartCount > 0 && (
+            <button
+                onClick={() => setCartOpen(true)}
+                className="fixed bottom-8 right-8 z-40 flex items-center gap-2.5 text-white text-sm font-medium px-5 py-3.5 rounded-full shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_36px_rgba(183,110,121,0.55)]"
+                style={{ background: 'linear-gradient(135deg, #b76e79 0%, #c9898a 100%)', fontFamily: 'Jost, sans-serif', letterSpacing: '0.04em', boxShadow: '0 8px 28px rgba(183,110,121,0.45)' }}
+                aria-label="View bag"
+            >
+                <ShoppingBag size={18} />
+                <span>My Bag</span>
+                <span className="w-5 h-5 rounded-full bg-white text-[#B76E79] text-[10px] font-bold flex items-center justify-center">
+                    {cartCount > 99 ? '99+' : cartCount}
+                </span>
+            </button>
+        )}
+
+        {/* Mini cart drawer */}
+        <MiniCartDrawer
+            isOpen={cartOpen}
+            onClose={() => setCartOpen(false)}
+            cart={cartItems}
+            onUpdate={refreshCart}
+        />
+        </>
     );
 };
 

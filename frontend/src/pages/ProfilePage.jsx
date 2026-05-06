@@ -115,7 +115,7 @@ const ProfilePage = () => {
 
     const handleLogout = () => {
         authApi.logout();
-        navigate('/login');
+        navigate('/');
     };
 
     if (isLoading) {

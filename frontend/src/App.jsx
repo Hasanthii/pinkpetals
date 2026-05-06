@@ -19,6 +19,10 @@ import CustomerDashboard from './pages/CustomerDashboard.jsx';
 import SupplierDashboard from './pages/SupplierDashboard.jsx';
 import SidebarLayout from './components/SidebarLayout.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import SalesForecast from './components/admin/SalesForecast.jsx';
+import SalesForecastChart from './components/admin/SalesForecastChart.jsx';
+import SkinProfileSetup from './pages/SkinProfileSetup.jsx';
+import { SkinProfileProvider } from './context/SkinProfileContext.jsx';
 
 const ProtectedRoute = ({ children, requireAdmin = false, requireSupplier = false }) => {
     const token = localStorage.getItem('pinkpetals_token');
@@ -41,8 +45,9 @@ const ProtectedRoute = ({ children, requireAdmin = false, requireSupplier = fals
 
 const App = () => {
     return (
-        <ErrorBoundary>
-            <Routes>
+        <SkinProfileProvider>
+            <ErrorBoundary>
+                <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 
@@ -63,6 +68,8 @@ const App = () => {
                         </ProtectedRoute>
                     }
                 />
+                
+                <Route path="/profile/skin" element={<SkinProfileSetup />} />
 
                 <Route
                     path="/admin"
@@ -152,6 +159,26 @@ const App = () => {
                         </ProtectedRoute>
                     }
                 />
+                <Route
+                    path="/admin/forecast"
+                    element={
+                        <ProtectedRoute requireAdmin>
+                            <SidebarLayout>
+                                <SalesForecast />
+                            </SidebarLayout>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/admin/forecast-chart"
+                    element={
+                        <ProtectedRoute requireAdmin>
+                            <SidebarLayout>
+                                <SalesForecastChart />
+                            </SidebarLayout>
+                        </ProtectedRoute>
+                    }
+                />
 
                 <Route
                     path="/customer/dashboard"
@@ -188,6 +215,7 @@ const App = () => {
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </ErrorBoundary>
+        </SkinProfileProvider>
     );
 };
 

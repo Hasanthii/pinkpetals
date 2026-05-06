@@ -43,7 +43,8 @@ const AdminUsersPage = () => {
     });
 
     useEffect(() => {
-        if (!authApi.isAdmin()) {
+        const role = localStorage.getItem('pinkpetals_role');
+        if (role !== 'ADMIN') {
             navigate('/');
             return;
         }
@@ -57,7 +58,7 @@ const AdminUsersPage = () => {
             const data = await userApi.getAllUsers();
             setUsers(data);
         } catch (err) {
-            setError(err.message || 'Failed to load users');
+            setError(err.message || err.response?.data?.message || 'Failed to load users. Make sure the backend is running on port 8080.');
         } finally {
             setIsLoading(false);
         }

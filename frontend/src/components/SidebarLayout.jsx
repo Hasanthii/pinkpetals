@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, ShoppingBag, Users, Package, Tag, Truck, User, Settings, LogOut, Flower2, ChevronRight, Star, Gift } from 'lucide-react';
+import { Home, ShoppingBag, Users, Package, Tag, Truck, User, Settings, LogOut, Flower2, ChevronRight, Star, Gift, Activity, Sparkles } from 'lucide-react';
 import { authApi } from '../services/authService.js';
 import { getUserInitials, getUserDisplayName } from '../types/user.js';
 
@@ -15,7 +15,7 @@ const SidebarLayout = ({ children }) => {
 
     const handleLogout = () => {
         authApi.logout();
-        navigate('/login');
+        navigate('/');
     };
 
     const mainNavItems = [
@@ -31,6 +31,8 @@ const SidebarLayout = ({ children }) => {
         { path: '/admin/reviews', icon: Star, label: 'Reviews', color: 'text-primary-rose' },
         { path: '/admin/promotions', icon: Gift, label: 'Promotions', color: 'text-deep-rose' },
         { path: '/admin/suppliers', icon: Truck, label: 'Suppliers', color: 'text-muted-rose' },
+        { path: '/admin/forecast', icon: Activity, label: 'Forecast', color: 'text-emerald-600' },
+        { path: '/admin/forecast-chart', icon: Activity, label: 'ML Analytics', color: 'text-emerald-600' },
     ];
 
     const supplierNavItems = [
@@ -43,6 +45,7 @@ const SidebarLayout = ({ children }) => {
         { path: '/cart', icon: ShoppingBag, label: 'My Bag', color: 'text-warm-rose' },
         { path: '/orders', icon: Tag, label: 'My Orders', color: 'text-soft-rose' },
         { path: '/profile', icon: User, label: 'My Profile', color: 'text-primary-rose' },
+        { path: '/profile/skin', icon: Sparkles, label: 'Skin Profile', color: 'text-primary-rose' },
         { path: '/reviews', icon: Star, label: 'My Reviews', color: 'text-primary-rose' },
     ];
 

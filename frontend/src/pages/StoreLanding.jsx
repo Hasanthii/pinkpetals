@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
     ArrowRight, Star, ShoppingBag, Instagram, Facebook, Twitter,
-    Shield, Truck, Gift, ChevronRight, Heart, Search, Menu, X, Flower2,
+    Shield, Truck, Gift, ChevronRight, Search, Menu, X, Flower2, User, Sparkles
 } from 'lucide-react';
 import { productApi } from '../services/api';
+import { cartService } from '../services/cartService';
+import MiniCartDrawer from '../components/MiniCartDrawer';
+import { useSkinProfile } from '../context/SkinProfileContext';
 
 /* ─────────────────────────────────────────────────────────────────
    Google Fonts injection (Playfair Display + Jost)
@@ -36,7 +39,6 @@ const StarRow = ({ n = 5 }) => (
    Product Card
 ───────────────────────────────────────────────────────────────── */
 const ProductCard = ({ product, onClick, onAddToCart }) => {
-    const [wished, setWished] = useState(false);
     const [imgError, setImgError] = useState(false);
     return (
         <div
@@ -44,15 +46,6 @@ const ProductCard = ({ product, onClick, onAddToCart }) => {
             className="group relative bg-white rounded-2xl overflow-hidden cursor-pointer"
             style={{ boxShadow: '0 4px 24px rgba(183,110,121,0.10)' }}
         >
-            <button
-                onClick={e => { e.stopPropagation(); setWished(w => !w); }}
-                className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-all duration-200 hover:scale-110"
-            >
-                <Heart
-                    size={15}
-                    className={wished ? 'fill-[#B76E79] text-[#B76E79]' : 'text-[#B76E79]'}
-                />
-            </button>
 
             <div
                 className="relative h-56 bg-gradient-to-br from-[#fdeef0] to-[#f5d5d8] overflow-hidden flex items-center justify-center"
@@ -61,7 +54,7 @@ const ProductCard = ({ product, onClick, onAddToCart }) => {
                     <img
                         src={product.imageUrl}
                         alt={product.name}
-                        className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                        className="w-full h-full object-contain bg-white object-center transition-transform duration-500 group-hover:scale-105"
                         onError={() => setImgError(true)}
                     />
                 ) : (
@@ -101,7 +94,7 @@ const ProductCard = ({ product, onClick, onAddToCart }) => {
                 <div className="flex items-center justify-between mt-3">
                     <p className="font-semibold text-[#B76E79] text-sm"
                         style={{ fontFamily: 'Playfair Display, serif' }}>
-                        LKR {Number(product.price).toLocaleString()}
+                        ${Number(product.price).toLocaleString()}
                     </p>
                 </div>
             </div>
@@ -112,21 +105,16 @@ const ProductCard = ({ product, onClick, onAddToCart }) => {
 /* ─────────────────────────────────────────────────────────────────
    Static placeholder products
 ───────────────────────────────────────────────────────────────── */
-const STATIC_PRODUCTS = [
-    { id: 1, name: 'Radiance Renewal Serum', brand: 'Pink Petals', category: 'Serum', price: 3500, stockQuantity: 20, imageUrl: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?w=400&q=80' },
-    { id: 2, name: 'HydroSilk Moisturiser', brand: 'Pink Petals', category: 'Moisturiser', price: 2800, stockQuantity: 15, imageUrl: 'https://images.unsplash.com/photo-1617897903246-719242758050?w=400&q=80' },
-    { id: 3, name: 'Vellose Lip Nectar', brand: 'Pink Petals', category: 'Lipstick', price: 1200, stockQuantity: 30, imageUrl: 'https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400&q=80' },
-    { id: 4, name: 'Botanic Cleanse Gel', brand: 'Pink Petals', category: 'Cleanser', price: 1900, stockQuantity: 25, imageUrl: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&q=80' },
-];
+
 
 /* ─────────────────────────────────────────────────────────────────
    Category tiles data
 ───────────────────────────────────────────────────────────────── */
 const CATEGORIES = [
-    { label: 'Skin Care', gradient: 'from-[#fdeef0] to-[#f8d7db]', accent: '#e8a5b0' },
-    { label: 'Makeup', gradient: 'from-[#fce4e8] to-[#f5c6cc]', accent: '#d4879a' },
-    { label: 'Body Care', gradient: 'from-[#fdf0f4] to-[#f9dde3]', accent: '#c9898a' },
-    { label: 'Hair Care', gradient: 'from-[#fff0f3] to-[#fbdadf]', accent: '#b76e79' },
+    { label: 'Exfoliator', gradient: 'from-[#fdeef0] to-[#f8d7db]', accent: '#e8a5b0' },
+    { label: 'Face Mask', gradient: 'from-[#fce4e8] to-[#f5c6cc]', accent: '#d4879a' },
+    { label: 'Serum', gradient: 'from-[#fdf0f4] to-[#f9dde3]', accent: '#c9898a' },
+    { label: 'Moisturizer', gradient: 'from-[#fff0f3] to-[#fbdadf]', accent: '#b76e79' },
 ];
 
 /* ─────────────────────────────────────────────────────────────────
@@ -137,11 +125,53 @@ const StoreLanding = () => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [toast, setToast] = useState('');
+    const [cartCount, setCartCount] = useState(() => cartService.getCartItemCount());
+    const [cartOpen, setCartOpen] = useState(false);
+    const [cartItems, setCartItems] = useState(() => cartService.getCart());
     const [email, setEmail] = useState('');
+    const { skinProfile } = useSkinProfile();
+
+    const refreshCart = () => {
+        setCartItems(cartService.getCart());
+        setCartCount(cartService.getCartItemCount());
+    };
+
+    // ── Auth state (reactive) ──────────────────────────────────
+    const getAuthState = () => {
+        const token = localStorage.getItem('pinkpetals_token');
+        const user = JSON.parse(localStorage.getItem('pinkpetals_user') || 'null');
+        const role = user?.role || localStorage.getItem('pinkpetals_role') || '';
+        const path = role === 'ADMIN' ? '/admin/products'
+            : role === 'SUPPLIER' ? '/supplier/dashboard'
+            : '/customer/dashboard';
+        return { isLoggedIn: !!token, storedUser: user, accountPath: path };
+    };
+    const [authState, setAuthState] = useState(getAuthState);
+    useEffect(() => {
+        // Sync if login/logout happens in another tab
+        const onStorage = () => {
+            setAuthState(getAuthState());
+            setCartCount(cartService.getCartItemCount());
+            setCartItems(cartService.getCart());
+        };
+        const onCartUpdated = () => {
+            setCartCount(cartService.getCartItemCount());
+            setCartItems(cartService.getCart());
+        };
+        window.addEventListener('storage', onStorage);
+        window.addEventListener('cartUpdated', onCartUpdated);
+        return () => {
+            window.removeEventListener('storage', onStorage);
+            window.removeEventListener('cartUpdated', onCartUpdated);
+        };
+    }, []);
+    const { isLoggedIn, storedUser, accountPath } = authState;
 
     const requireCart = () => {
-        const user = JSON.parse(localStorage.getItem('pinkpetals_user') || 'null');
-        if (!user) {
+        const token = localStorage.getItem('pinkpetals_token');
+        if (token) {
+            setCartOpen(true);
+        } else {
             setToast('Please sign in to add items to your cart.');
             setTimeout(() => setToast(''), 3500);
             setTimeout(() => navigate('/login'), 1500);
@@ -150,12 +180,12 @@ const StoreLanding = () => {
 
     useEffect(() => {
         productApi.getAll()
-            .then(r => setProducts(r.data.length ? r.data.slice(0, 4) : STATIC_PRODUCTS))
-            .catch(() => setProducts(STATIC_PRODUCTS))
+            .then(r => setProducts(r.data.length ? r.data.slice(0, 4) : []))
+            .catch(() => setProducts([]))
             .finally(() => setLoading(false));
     }, []);
 
-    const displayProducts = products.length ? products : STATIC_PRODUCTS;
+    const displayProducts = products;
 
     return (
         <div style={{ fontFamily: 'Jost, sans-serif', background: '#fffaf9' }}>
@@ -174,13 +204,6 @@ const StoreLanding = () => {
                 TOP HEADER (Info + Navigation + Promo strip)
             ════════════════════════════════════════════════════ */}
             <div className="w-full border-b border-[#f5d5d8]" style={{ background: '#fffaf9' }}>
-                <div
-                    className="w-full text-center py-1.5 text-[11px] tracking-[0.14em] uppercase text-white"
-                    style={{ background: 'linear-gradient(90deg, #b76e79, #c9898a, #b76e79)', fontFamily: 'Jost, sans-serif' }}
-                >
-                    Free Sample with Every Order &nbsp;|&nbsp; Island-wide Delivery &nbsp;|&nbsp; 100% Authentic Products
-                </div>
-
                 <div className="max-w-7xl mx-auto px-4 md:px-8 h-[64px] flex items-center justify-between">
                     <button
                         onClick={() => navigate('/')}
@@ -216,26 +239,36 @@ const StoreLanding = () => {
                         </button>
                         <button
                             onClick={requireCart}
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-[#6b3040] hover:text-[#B76E79] hover:bg-[#fdeef0] transition-all"
-                            aria-label="Wishlist"
-                        >
-                            <Heart size={16} />
-                        </button>
-                        <button
-                            onClick={requireCart}
                             className="relative w-8 h-8 rounded-full flex items-center justify-center text-[#6b3040] hover:text-[#B76E79] hover:bg-[#fdeef0] transition-all"
                             aria-label="Cart"
                         >
                             <ShoppingBag size={16} />
-                            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#B76E79] text-white text-[10px] flex items-center justify-center">0</span>
+                            {cartCount > 0 && (
+                                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#B76E79] text-white text-[10px] flex items-center justify-center">
+                                    {cartCount > 99 ? '99+' : cartCount}
+                                </span>
+                            )}
                         </button>
-                        <button
-                            onClick={() => navigate('/login')}
-                            className="ml-1 px-5 py-2 rounded-full text-white text-sm font-medium transition-all duration-200 hover:-translate-y-0.5"
-                            style={{ background: 'linear-gradient(135deg, #b76e79 0%, #c9898a 100%)', fontFamily: 'Jost, sans-serif' }}
-                        >
-                            Sign In
-                        </button>
+                        {isLoggedIn ? (
+                            <button
+                                onClick={() => navigate(accountPath)}
+                                className="flex items-center gap-2.5 ml-1 px-4 py-2 rounded-full text-[#B76E79] hover:bg-[#fdeef0] border border-[#f5d5d8] hover:border-[#B76E79] transition-all duration-200"
+                                aria-label="My Account"
+                            >
+                                <User size={18} />
+                                <span className="text-xs font-medium whitespace-nowrap" style={{ fontFamily: 'Jost, sans-serif' }}>
+                                    Hi, {storedUser?.firstName || 'User'}
+                                </span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => navigate('/login')}
+                                className="ml-1 px-5 py-2 rounded-full text-white text-sm font-medium transition-all duration-200 hover:-translate-y-0.5"
+                                style={{ background: 'linear-gradient(135deg, #b76e79 0%, #c9898a 100%)', fontFamily: 'Jost, sans-serif' }}
+                            >
+                                Sign In
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -243,7 +276,7 @@ const StoreLanding = () => {
                     className="w-full text-center py-2 text-[11px] uppercase tracking-[0.18em] text-white"
                     style={{ background: '#c9898a', fontFamily: 'Jost, sans-serif' }}
                 >
-                    Free shipping on orders over LKR 5,000 &nbsp;|&nbsp; Use code <strong>GLOW10</strong> for 10% off your first order
+                    Free shipping on orders over $50 &nbsp;|&nbsp; Use code <strong>GLOW10</strong> for 10% off your first order
                 </div>
             </div>
 
@@ -309,11 +342,7 @@ const StoreLanding = () => {
                             <button
                                 onClick={() => {
                                     const token = localStorage.getItem('pinkpetals_token');
-                                    if (token) {
-                                        navigate('/login');
-                                    } else {
-                                        navigate('/login');
-                                    }
+                                    navigate(token ? '/shop' : '/login');
                                 }}
                                 className="flex items-center gap-2 text-white text-sm font-medium px-8 py-3.5 rounded-full transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
                                 style={{
@@ -334,52 +363,6 @@ const StoreLanding = () => {
                             </button>
                         </div>
 
-                        {/* Trust row */}
-                        <div className="flex items-center gap-6 mt-10">
-                            {[
-                                { num: '10K+', label: 'Happy Customers' },
-                                { num: '500+', label: 'Products' },
-                                { num: '4.9', label: 'Avg Rating' },
-                            ].map(s => (
-                                <div key={s.label} className="flex flex-col">
-                                    <span
-                                        className="text-xl font-semibold text-[#3d1a22]"
-                                        style={{ fontFamily: 'Playfair Display, serif' }}
-                                    >
-                                        {s.num}
-                                    </span>
-                                    <span
-                                        className="text-[10px] uppercase tracking-widest text-[#8a4a58]"
-                                        style={{ fontFamily: 'Jost, sans-serif' }}
-                                    >
-                                        {s.label}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* ════════════════════════════════════════════════════
-                PERKS STRIP
-            ════════════════════════════════════════════════════ */}
-            <section className="bg-white border-y" style={{ borderColor: '#f5d5d8' }}>
-                <div className="max-w-6xl mx-auto px-6 py-4">
-                    <div className="flex flex-wrap justify-center md:justify-between gap-5">
-                        {[
-                            { icon: <Truck size={17} />, text: 'Island-wide Delivery' },
-                            { icon: <Gift size={17} />, text: 'Free Sample with Every Order' },
-                            { icon: <Shield size={17} />, text: '100% Authentic Products' },
-                            { icon: <ShoppingBag size={17} />, text: 'Secure Checkout' },
-                        ].map(p => (
-                            <div key={p.text}
-                                className="flex items-center gap-2.5 text-sm text-gray-700"
-                                style={{ fontFamily: 'Jost, sans-serif', fontWeight: 500 }}>
-                                <span className="text-[#B76E79]">{p.icon}</span>
-                                {p.text}
-                            </div>
-                        ))}
                     </div>
                 </div>
             </section>
@@ -443,437 +426,97 @@ const StoreLanding = () => {
             </section>
 
             {/* ════════════════════════════════════════════════════
-                BESTSELLERS
+                SKIN PROFILE QUICK ACCESS
             ════════════════════════════════════════════════════ */}
-            <section className="py-16 px-6" style={{ background: '#fff5f6' }}>
-                <div className="max-w-6xl mx-auto">
-                    <div className="text-center mb-10">
-                        <p className="text-xs uppercase tracking-[0.22em] text-[#B76E79] mb-2"
-                            style={{ fontFamily: 'Jost, sans-serif' }}>
-                            Customer Favourites
-                        </p>
-                        <h2 style={{
-                            fontFamily: 'Playfair Display, serif',
-                            fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)',
-                            color: '#3d1a22',
-                            fontWeight: 600,
-                        }}>
-                            Bestsellers
-                        </h2>
-                        <div className="mx-auto mt-3 w-10 h-0.5 rounded-full" style={{ background: '#B76E79' }} />
-                    </div>
-
-                    {/* Tabs */}
-                    <div className="flex justify-center gap-6 mb-8">
-                        {['Best Sellers', 'New Arrivals', 'Super Savers'].map((tab, i) => (
-                            <button
-                                key={tab}
-                                className={`text-xs uppercase tracking-widest pb-1 transition-all duration-200 ${i === 0 ? 'text-[#B76E79] border-b-2 border-[#B76E79]' : 'text-gray-400 hover:text-[#B76E79]'}`}
-                                style={{ fontFamily: 'Jost, sans-serif' }}
-                            >
-                                {tab}
-                            </button>
-                        ))}
-                    </div>
-
-                    {loading ? (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            {[...Array(4)].map((_, i) => (
-                                <div key={i} className="bg-white rounded-2xl p-4 animate-pulse h-72" />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            {displayProducts.map(p => (
-                                <ProductCard
-                                    key={p.id}
-                                    product={p}
-                                    onClick={() => {
-                                        const token = localStorage.getItem('pinkpetals_token');
-                                        if (token) {
-                                            navigate('/login');
-                                        } else {
-                                            navigate('/login');
-                                        }
-                                    }}
-                                    onAddToCart={requireCart}
-                                />
-                            ))}
-                        </div>
-                    )}
-
-                    <div className="text-center mt-10">
-                        <button
-                            onClick={() => {
-                                const token = localStorage.getItem('pinkpetals_token');
-                                if (token) {
-                                    navigate('/login');
-                                } else {
-                                    navigate('/login');
-                                }
-                            }}
-                            className="inline-flex items-center gap-2 text-sm font-medium px-8 py-3 rounded-full border border-[#B76E79] text-[#B76E79] hover:bg-[#B76E79] hover:text-white transition-all duration-200"
-                            style={{ fontFamily: 'Jost, sans-serif', letterSpacing: '0.05em' }}
-                        >
-                            View All Products <ArrowRight size={14} />
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            {/* ════════════════════════════════════════════════════
-                MID SALE BANNER — Pink gradient
-            ════════════════════════════════════════════════════ */}
-            <section
-                className="py-0"
-                style={{ background: 'linear-gradient(135deg, #b76e79 0%, #c9898a 50%, #d4a4a4 100%)' }}
-            >
-                <div className="max-w-6xl mx-auto px-6 md:px-12 grid md:grid-cols-2 gap-0 items-center min-h-[300px]">
-                    <div className="py-14 md:py-0 space-y-4">
-                        <p className="text-white/70 text-xs uppercase tracking-[0.22em]"
-                            style={{ fontFamily: 'Jost, sans-serif' }}>
-                            Limited Time Offer
-                        </p>
-                        <h2
-                            style={{
+            <section className="py-20 px-6" style={{ background: '#fff5f6' }}>
+                <div className="max-w-4xl mx-auto text-center">
+                    {!skinProfile ? (
+                        <div className="bg-white p-12 rounded-[3rem] shadow-xl border border-pink-100 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 p-8 opacity-10">
+                                <Sparkles size={120} className="text-[#B76E79]" />
+                            </div>
+                            
+                            <p className="text-xs uppercase tracking-[0.25em] text-[#B76E79] mb-4 font-semibold"
+                                style={{ fontFamily: 'Jost, sans-serif' }}>
+                                Personalized for You
+                            </p>
+                            <h2 className="mb-6" style={{
                                 fontFamily: 'Playfair Display, serif',
                                 fontSize: 'clamp(2rem, 4vw, 3rem)',
-                                color: '#fff',
-                                lineHeight: 1.2,
-                                fontWeight: 600,
-                            }}
-                        >
-                            Spring Beauty Sale
-                            <br />
-                            <em style={{ fontSize: '0.85em', fontStyle: 'italic', opacity: 0.9 }}>Up to 40% OFF</em>
-                        </h2>
-                        <p className="text-white/80 text-sm leading-relaxed max-w-xs"
-                            style={{ fontFamily: 'Jost, sans-serif', fontWeight: 300 }}>
-                            Fresh formulas. Soft hues. Skin that glows like spring mornings.
-                        </p>
-                        <button
-                            onClick={() => {
-                                const token = localStorage.getItem('pinkpetals_token');
-                                if (token) {
-                                    navigate('/login');
-                                } else {
-                                    navigate('/login');
-                                }
-                            }}
-                            className="inline-flex items-center gap-2 bg-white text-[#B76E79] text-sm font-medium px-7 py-3 rounded-full hover:bg-pink-50 transition-all duration-200 mt-2"
-                            style={{ fontFamily: 'Jost, sans-serif', letterSpacing: '0.05em', boxShadow: '0 6px 20px rgba(0,0,0,0.15)' }}
-                        >
-                            Shop the Sale <ArrowRight size={14} />
-                        </button>
-                        <p className="text-white/50 text-xs" style={{ fontFamily: 'Jost, sans-serif' }}>
-                            While stocks last.
-                        </p>
-                    </div>
-                    <div className="hidden md:flex items-center justify-end overflow-hidden" style={{ height: '300px' }}>
-                        <div className="relative w-full h-full flex items-center justify-center">
-                            <div className="absolute inset-0 overflow-hidden">
-                                <div className="absolute w-72 h-72 rounded-full opacity-10 animate-pulse" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }} />
-                                <div className="absolute w-48 h-48 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%)', top: '50%', left: '50%', transform: 'translate(-50%, -50%) scale(1.2)', animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite', animationDelay: '0.5s' }} />
-                                <div className="absolute w-32 h-32 rounded-full opacity-20" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)', top: '20%', left: '30%' }} />
-                                <div className="absolute w-24 h-24 rounded-full opacity-15" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)', bottom: '20%', right: '20%' }} />
-                                <div className="absolute w-16 h-16 rounded-2xl rotate-12 opacity-20" style={{ background: 'rgba(255,255,255,0.2)', top: '25%', right: '25%' }} />
-                                <div className="absolute w-12 h-12 rounded-xl -rotate-12 opacity-15" style={{ background: 'rgba(255,255,255,0.15)', bottom: '30%', left: '20%' }} />
-                                <div className="absolute w-8 h-8 rounded-full opacity-25" style={{ background: 'rgba(255,255,255,0.3)', top: '40%', right: '15%' }} />
-                                <div className="absolute w-6 h-6 rounded-lg rotate-45 opacity-20" style={{ background: 'rgba(255,255,255,0.2)', bottom: '40%', left: '35%' }} />
-                                <div className="absolute top-0 left-1/4 w-px h-full opacity-20" style={{ background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.5), transparent)' }} />
-                                <div className="absolute top-0 right-1/3 w-px h-full opacity-15" style={{ background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.3), transparent)' }} />
+                                color: '#3d1a22',
+                                fontWeight: 700,
+                                lineHeight: 1.2
+                            }}>
+                                Find Your Perfect <br/>
+                                <em className="italic text-[#B76E79]">Skin Match</em>
+                            </h2>
+                            <p className="text-gray-600 mb-10 max-w-lg mx-auto leading-relaxed"
+                                style={{ fontFamily: 'Jost, sans-serif' }}>
+                                Complete your skin profile in just 30 seconds to unlock AI-powered recommendations tailored specifically to your skin type and tone.
+                            </p>
+                            
+                            <button
+                                onClick={() => {
+                                    if (isLoggedIn) {
+                                        navigate('/profile/skin');
+                                    } else {
+                                        setToast('Please sign in to save your skin profile.');
+                                        setTimeout(() => setToast(''), 3000);
+                                        navigate('/login');
+                                    }
+                                }}
+                                className="inline-flex items-center gap-3 text-white text-sm font-bold px-10 py-4 rounded-full transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
+                                style={{
+                                    background: 'linear-gradient(135deg, #b76e79 0%, #c9898a 100%)',
+                                    fontFamily: 'Jost, sans-serif',
+                                    letterSpacing: '0.05em',
+                                    boxShadow: '0 10px 30px rgba(183,110,121,0.3)'
+                                }}
+                            >
+                                Build My Profile <Sparkles size={18} />
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="bg-white/40 p-12 rounded-[3rem] border border-pink-100/50">
+                            <div className="flex justify-center mb-6">
+                                <div className="w-16 h-16 rounded-full bg-pink-100 flex items-center justify-center">
+                                    <Sparkles size={30} className="text-[#B76E79]" />
+                                </div>
                             </div>
-                            <div className="relative z-10 text-center select-none">
-                                <div className="relative inline-block">
-                                    <div className="absolute -inset-4 rounded-2xl opacity-30" style={{ background: 'rgba(255,255,255,0.1)', filter: 'blur(8px)' }} />
-                                    <div className="relative">
-                                        <div className="text-8xl font-bold text-white tracking-widest" style={{ fontFamily: 'Playfair Display, serif', letterSpacing: '0.08em', textShadow: '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)' }}>
-                                            SALE
-                                        </div>
-                                        <div className="absolute -bottom-1 left-0 right-0 h-1 rounded-full opacity-60" style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.8), transparent)' }} />
-                                    </div>
-                                </div>
-                                <div className="mt-2 text-base text-white/80 tracking-[0.35em] font-light" style={{ fontFamily: 'Jost, sans-serif', textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
-                                    UP TO 40% OFF
-                                </div>
-                                <div className="mt-4 flex items-center justify-center gap-3">
-                                    <div className="w-12 h-px rounded-full" style={{ background: 'linear-gradient(to right, transparent, rgba(255,255,255,0.6))' }} />
-                                    <div className="w-2 h-2 rounded-full bg-white/50" />
-                                    <div className="w-12 h-px rounded-full" style={{ background: 'linear-gradient(to left, transparent, rgba(255,255,255,0.6))' }} />
-                                </div>
-                                <div className="mt-3 text-xs text-white/50 tracking-[0.2em]" style={{ fontFamily: 'Jost, sans-serif' }}>
-                                    LIMITED TIME OFFER
-                                </div>
+                            <h2 className="mb-3" style={{
+                                fontFamily: 'Playfair Display, serif',
+                                fontSize: '2.2rem',
+                                color: '#3d1a22',
+                                fontWeight: 700
+                            }}>
+                                Welcome Back, {storedUser?.firstName || 'Beautiful'}
+                            </h2>
+                            <p className="text-gray-500 mb-8" style={{ fontFamily: 'Jost, sans-serif' }}>
+                                Your AI-personalized experience is active. <br/>
+                                <span className="text-xs uppercase tracking-widest text-[#B76E79] font-semibold">
+                                    {skinProfile.skinType} • {skinProfile.skinTone} • {skinProfile.eyeColor}
+                                </span>
+                            </p>
+                            <div className="flex justify-center gap-4">
+                                <button
+                                    onClick={() => navigate('/shop')}
+                                    className="text-xs font-bold uppercase tracking-widest text-[#B76E79] border-b border-[#B76E79] pb-1 hover:text-[#9e5c67] hover:border-[#9e5c67] transition-all"
+                                >
+                                    Explore My Matches
+                                </button>
+                                <span className="text-pink-200">|</span>
+                                <button
+                                    onClick={() => navigate('/profile/skin')}
+                                    className="text-xs font-bold uppercase tracking-widest text-gray-400 hover:text-[#B76E79] transition-all"
+                                >
+                                    Update Profile
+                                </button>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             </section>
 
-            {/* ════════════════════════════════════════════════════
-                WHY CHOOSE US — 3 columns
-            ════════════════════════════════════════════════════ */}
-            <section className="py-20 px-6" style={{ background: '#fffaf9' }}>
-                <div className="max-w-6xl mx-auto">
-                    <div className="text-center mb-12">
-                        <p className="text-xs uppercase tracking-[0.22em] text-[#B76E79] mb-2"
-                            style={{ fontFamily: 'Jost, sans-serif' }}>
-                            The Pink Petals Difference
-                        </p>
-                        <h2
-                            style={{
-                                fontFamily: 'Playfair Display, serif',
-                                fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)',
-                                color: '#3d1a22',
-                                fontWeight: 600,
-                            }}
-                        >
-                            Why Thousands Choose Us
-                        </h2>
-                    </div>
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {[
-                            {
-                                title: 'Botanically Inspired',
-                                desc: 'Every formula draws from nature — enriched with floral extracts, plant actives, and pure botanicals your skin craves.',
-                                icon: '🌸',
-                            },
-                            {
-                                title: 'Dermatologist Tested',
-                                desc: 'Clinically formulated and tested for all skin types — even the most sensitive. Your safety is our promise.',
-                                icon: '🔬',
-                            },
-                            {
-                                title: 'Cruelty-Free Always',
-                                desc: 'We believe beauty should be kind. Our products are never tested on animals — beauty without compromise.',
-                                icon: '🐰',
-                            },
-                        ].map(item => (
-                            <div
-                                key={item.title}
-                                className="p-8 rounded-2xl text-center border border-pink-100 hover:border-pink-200 transition-all duration-300 hover:shadow-lg"
-                                style={{ background: '#fff' }}
-                            >
-                                <div className="text-4xl mb-4">{item.icon}</div>
-                                <h3
-                                    className="text-base font-semibold text-[#3d1a22] mb-3"
-                                    style={{ fontFamily: 'Playfair Display, serif' }}
-                                >
-                                    {item.title}
-                                </h3>
-                                <p
-                                    className="text-sm text-gray-500 leading-relaxed"
-                                    style={{ fontFamily: 'Jost, sans-serif', fontWeight: 300 }}
-                                >
-                                    {item.desc}
-                                </p>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* ════════════════════════════════════════════════════
-                TESTIMONIALS
-            ════════════════════════════════════════════════════ */}
-            <section
-                className="py-20 px-6"
-                style={{ background: 'linear-gradient(135deg, #fff0f3 0%, #fdf5f8 100%)' }}
-            >
-                <div className="max-w-6xl mx-auto">
-                    <div className="text-center mb-10">
-                        <p className="text-xs uppercase tracking-[0.22em] text-[#B76E79] mb-2"
-                            style={{ fontFamily: 'Jost, sans-serif' }}>
-                            Real Stories
-                        </p>
-                        <h2
-                            style={{
-                                fontFamily: 'Playfair Display, serif',
-                                fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)',
-                                color: '#3d1a22',
-                                fontWeight: 600,
-                            }}
-                        >
-                            Loved by Thousands
-                        </h2>
-                    </div>
-
-                    <div className="grid md:grid-cols-3 gap-6">
-                        {[
-                            {
-                                name: 'Nalini S.',
-                                text: '"I have never looked this fresh. The serum completely transformed my skin — soft, radiant and glowing."',
-                                rating: 5,
-                                location: 'Colombo',
-                            },
-                            {
-                                name: 'Dinusha P.',
-                                text: '"The HydroSilk Moisturiser is the best I have tried. My skin stays hydrated all day long. Absolutely love it!"',
-                                rating: 5,
-                                location: 'Kandy',
-                            },
-                            {
-                                name: 'Tharushi M.',
-                                text: '"Fast delivery, gorgeous packaging, and the lip nectar is incredible. Pink Petals is now my go-to brand!"',
-                                rating: 5,
-                                location: 'Galle',
-                            },
-                        ].map(t => (
-                            <div
-                                key={t.name}
-                                className="bg-white rounded-2xl p-7 border border-pink-100"
-                                style={{ boxShadow: '0 4px 20px rgba(183,110,121,0.08)' }}
-                            >
-                                <StarRow n={t.rating} />
-                                <blockquote
-                                    className="mt-4 text-sm text-gray-600 leading-relaxed italic"
-                                    style={{ fontFamily: 'Jost, sans-serif', fontWeight: 300 }}
-                                >
-                                    {t.text}
-                                </blockquote>
-                                <div className="flex items-center gap-3 mt-5">
-                                    <div
-                                        className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-semibold"
-                                        style={{ background: 'linear-gradient(135deg, #b76e79, #c9898a)' }}
-                                    >
-                                        {t.name[0]}
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-semibold text-[#3d1a22]"
-                                            style={{ fontFamily: 'Jost, sans-serif' }}>{t.name}</p>
-                                        <p className="text-[10px] text-gray-400"
-                                            style={{ fontFamily: 'Jost, sans-serif' }}>{t.location}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* ════════════════════════════════════════════════════
-                INSTAGRAM / SHOP THE FEED (mood-board style)
-            ════════════════════════════════════════════════════ */}
-            <section className="py-16 px-6 bg-white">
-                <div className="max-w-6xl mx-auto text-center mb-10">
-                    <p className="text-xs uppercase tracking-[0.22em] text-[#B76E79] mb-2"
-                        style={{ fontFamily: 'Jost, sans-serif' }}>
-                        @pinkpetals.lk
-                    </p>
-                    <h2
-                        style={{
-                            fontFamily: 'Playfair Display, serif',
-                            fontSize: 'clamp(1.6rem, 3vw, 2.2rem)',
-                            color: '#3d1a22',
-                            fontWeight: 600,
-                        }}
-                    >
-                        Shop the Feed
-                    </h2>
-                </div>
-                {/* Mood-board grid */}
-                <div className="max-w-6xl mx-auto grid grid-cols-4 md:grid-cols-6 gap-2">
-                    {[
-                        { img: 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=300&q=80', gradient: 'from-[#fdeef0] to-[#f8d7db]' },
-                        { img: 'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?w=300&q=80', gradient: 'from-[#fce4e8] to-[#f5c6cc]' },
-                        { img: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=300&q=80', gradient: 'from-[#fdf0f4] to-[#f9dde3]' },
-                        { img: 'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=300&q=80', gradient: 'from-[#fff0f3] to-[#fbdadf]' },
-                        { img: 'https://images.unsplash.com/photo-1560750588-73207b1ef5b8?w=300&q=80', gradient: 'from-[#fdeef0] to-[#f5c6cc]' },
-                        { img: 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=300&q=80', gradient: 'from-[#fce4e8] to-[#fdf0f4]' },
-                    ].map((item, i) => (
-                        <div
-                            key={i}
-                            className={`aspect-square rounded-xl bg-gradient-to-br ${item.gradient} group cursor-pointer overflow-hidden relative`}
-                            onClick={() => {
-                                const token = localStorage.getItem('pinkpetals_token');
-                                if (token) {
-                                    navigate('/login');
-                                } else {
-                                    navigate('/login');
-                                }
-                            }}
-                        >
-                            <img
-                                src={item.img}
-                                alt={`Instagram ${i + 1}`}
-                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                            />
-                            <div
-                                className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                                style={{ background: 'rgba(183,110,121,0.3)' }}
-                            >
-                                <ShoppingBag size={18} className="text-white" />
-                            </div>
-                        </div>
-                    ))}
-                </div>
-                <p
-                    className="text-center mt-4 text-xs text-[#B76E79] underline underline-offset-2 cursor-pointer hover:no-underline"
-                    style={{ fontFamily: 'Jost, sans-serif' }}
-                    onClick={() => {
-                        const token = localStorage.getItem('pinkpetals_token');
-                        if (token) {
-                            navigate('/login');
-                        } else {
-                            navigate('/login');
-                        }
-                    }}
-                >
-                    Follow us on Instagram
-                </p>
-            </section>
-
-            {/* ════════════════════════════════════════════════════
-                NEWSLETTER CTA
-            ════════════════════════════════════════════════════ */}
-            <section
-                className="py-16 px-6"
-                style={{ background: 'linear-gradient(135deg, #3d1a22 0%, #6b3040 100%)' }}
-            >
-                <div className="max-w-xl mx-auto text-center">
-                    <p className="text-xs uppercase tracking-[0.22em] text-[#e8c5c0] mb-2"
-                        style={{ fontFamily: 'Jost, sans-serif' }}>
-                        Join the Petal Club
-                    </p>
-                    <h2
-                        className="mb-3"
-                        style={{
-                            fontFamily: 'Playfair Display, serif',
-                            fontSize: 'clamp(1.6rem, 3vw, 2rem)',
-                            color: '#fff',
-                            fontWeight: 600,
-                        }}
-                    >
-                        Glow Up with Exclusive Offers
-                    </h2>
-                    <p
-                        className="text-sm text-white/60 mb-7 leading-relaxed"
-                        style={{ fontFamily: 'Jost, sans-serif', fontWeight: 300 }}
-                    >
-                        Be the first to know about new launches, flash sales, and skincare secrets —
-                        delivered straight to your inbox.
-                    </p>
-                    <div className="flex gap-2 max-w-md mx-auto">
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            placeholder="Your email address"
-                            className="flex-1 text-sm px-5 py-3 rounded-full bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-1 focus:ring-[#B76E79]"
-                            style={{ fontFamily: 'Jost, sans-serif' }}
-                        />
-                        <button
-                            className="text-sm font-medium px-6 py-3 rounded-full text-[#3d1a22] transition-all duration-200 hover:shadow-xl whitespace-nowrap"
-                            style={{ background: 'linear-gradient(135deg, #f5dfd9, #e8c5c0)', fontFamily: 'Jost, sans-serif', letterSpacing: '0.04em' }}
-                        >
-                            Subscribe
-                        </button>
-                    </div>
-                    <p className="text-[10px] text-white/30 mt-3" style={{ fontFamily: 'Jost, sans-serif' }}>
-                        No spam. Unsubscribe anytime.
-                    </p>
-                </div>
-            </section>
 
             {/* ════════════════════════════════════════════════════
                 SOCIAL LINKS FOOTER BAR
@@ -899,6 +542,14 @@ const StoreLanding = () => {
                     </div>
                 </div>
             </section>
+
+            {/* ── Mini Cart Drawer ───────────────────────── */}
+            <MiniCartDrawer
+                isOpen={cartOpen}
+                onClose={() => setCartOpen(false)}
+                cart={cartItems}
+                onUpdate={refreshCart}
+            />
         </div>
     );
 };

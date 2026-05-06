@@ -5,7 +5,7 @@ import { TableRowSkeleton } from '../components/SkeletonLoader';
 import ErrorBoundary from '../components/ErrorBoundary';
 import api from '../services/api';
 
-const CATEGORIES = ['Skin Care', 'Makeup', 'Body Care', 'Hair Care', 'Serum', 'Moisturiser', 'Cleanser', 'Lipstick'];
+const CATEGORIES = ['Skin Care', 'Makeup', 'Body Care', 'Hair Care', 'Serum', 'Moisturiser', 'Cleanser', 'Lipstick', 'Sunscreen'];
 
 const emptyForm = {
     name: '',
@@ -335,7 +335,7 @@ const AdminProductPageContent = () => {
                                                         style={{ background: 'linear-gradient(135deg, #fdeef0 0%, #f5d5d8 100%)' }}
                                                     >
                                                         {p.imageUrl ? (
-                                                            <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover rounded-lg" />
+                                                            <img src={p.imageUrl} alt={p.name} className="w-full h-full object-contain bg-white rounded-lg" />
                                                         ) : (
                                                             <Package size={16} className="text-[#B76E79]" />
                                                         )}
@@ -361,7 +361,7 @@ const AdminProductPageContent = () => {
                                             </td>
                                             <td className="px-4 py-3">
                                                 <p className="text-sm font-semibold text-[#B76E79]" style={{ fontFamily: 'Playfair Display, serif' }}>
-                                                    LKR {Number(p.price).toLocaleString()}
+                                                    ${Number(p.price).toLocaleString()}
                                                 </p>
                                             </td>
                                             <td className="px-4 py-3">
@@ -504,7 +504,7 @@ const AdminProductPageContent = () => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs uppercase tracking-widest text-[#B76E79] mb-1">Price (LKR) *</label>
+                                    <label className="block text-xs uppercase tracking-widest text-[#B76E79] mb-1">Price ($) *</label>
                                     <input
                                         type="number"
                                         value={form.price}

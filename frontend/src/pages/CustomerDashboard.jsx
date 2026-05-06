@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Star, Package, Heart, CreditCard, Truck, ArrowRight, Sparkles } from 'lucide-react';
+import { ShoppingBag, Star, Package, CreditCard, Truck, ArrowRight, Sparkles } from 'lucide-react';
 import { orderApi } from '../services/orderService';
 import { cartService } from '../services/cartService';
 import ErrorBoundary from '../components/ErrorBoundary.jsx';
@@ -44,15 +44,15 @@ const CustomerDashboardContent = () => {
     const stats = [
         { icon: ShoppingBag, label: 'Total Orders', value: orders.length.toString(), color: 'from-pink-400 to-rose-500' },
         { icon: Star, label: 'My Reviews', value: '0', color: 'from-amber-400 to-orange-500' },
-        { icon: Heart, label: 'In Bag', value: cartCount.toString(), color: 'from-red-400 to-pink-500' },
+        { icon: ShoppingBag, label: 'In Bag', value: cartCount.toString(), color: 'from-pink-400 to-rose-500' },
         { icon: CreditCard, label: 'Points Earned', value: '0', color: 'from-green-400 to-emerald-500' },
     ];
 
     const quickActions = [
-        { icon: ShoppingBag, label: 'Browse Shop', desc: 'Explore our latest products', path: '/shop', color: '#B76E79' },
-        { icon: Package, label: 'My Bag', desc: 'View your cart', path: '/cart', color: '#c9898a' },
-        { icon: Truck, label: 'My Orders', desc: 'Track your deliveries', path: '/orders', color: '#d4879a' },
-        { icon: Star, label: 'Write Review', desc: 'Share your experience', path: '/reviews', color: '#d4a0a0' },
+        { icon: Sparkles, label: 'Skin Profile', desc: 'Update your skin details', path: '/profile/skin', color: '#B76E79' },
+        { icon: ShoppingBag, label: 'Browse Shop', desc: 'Explore our latest products', path: '/shop', color: '#c9898a' },
+        { icon: Package, label: 'My Bag', desc: 'View your cart', path: '/cart', color: '#d4879a' },
+        { icon: Truck, label: 'My Orders', desc: 'Track your deliveries', path: '/orders', color: '#d4a0a0' },
     ];
 
     return (
@@ -132,7 +132,7 @@ const CustomerDashboardContent = () => {
                                             {order.status}
                                         </span>
                                         <p className="text-sm font-semibold text-deep-burgundy mt-1">
-                                            LKR {Number(order.totalAmount || 0).toLocaleString()}
+                                            ${Number(order.totalAmount || 0).toLocaleString()}
                                         </p>
                                     </div>
                                 </div>

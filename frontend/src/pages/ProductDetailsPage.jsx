@@ -5,6 +5,8 @@ import { cartService } from '../services/cartService';
 import { reviewApi } from '../services/reviewService';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { Star, ArrowLeft, ShoppingBag, Check, Truck, Shield, RotateCcw, MessageSquare } from 'lucide-react';
+import Navbar from '../components/Navbar';
+import ProductRecommendation from '../components/ProductRecommendation';
 
 const ProductDetailsContent = () => {
     const { id } = useParams();
@@ -127,13 +129,7 @@ const ProductDetailsContent = () => {
 
     return (
         <div style={{ fontFamily: 'Jost, sans-serif', background: '#fffaf9', minHeight: '100vh' }}>
-            <div
-                className="w-full text-center py-2.5 text-xs tracking-[0.15em] uppercase text-white"
-                style={{ background: 'linear-gradient(90deg, #b76e79, #c9898a, #b76e79)' }}
-            >
-                Free shipping on orders over LKR 5,000 &nbsp;|&nbsp; Use code <strong>GLOW10</strong> for 10% off
-            </div>
-
+            <Navbar />
             <div className="max-w-7xl mx-auto px-6 py-10">
                 <button
                     onClick={() => navigate('/shop')}
@@ -159,7 +155,7 @@ const ProductDetailsContent = () => {
                             <img
                                 src={product.imageUrl}
                                 alt={product.name}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-contain bg-white mix-blend-multiply"
                             />
                         ) : (
                             <div className="flex flex-col items-center gap-4">
@@ -215,7 +211,7 @@ const ProductDetailsContent = () => {
                             className="text-3xl font-semibold text-[#B76E79]"
                             style={{ fontFamily: 'Playfair Display, serif' }}
                         >
-                            LKR {Number(product.price).toLocaleString()}
+                            ${Number(product.price).toLocaleString()}
                         </p>
 
                         {product.description && (
@@ -254,6 +250,12 @@ const ProductDetailsContent = () => {
                                 </div>
                             )}
                         </div>
+
+                        <ProductRecommendation 
+                            brandName={product.brand || product.category}
+                            subCategory={product.category}
+                            priceUsd={product.price}
+                        />
 
                         {!isOutOfStock && (
                             <div className="flex items-center gap-4">
@@ -295,7 +297,7 @@ const ProductDetailsContent = () => {
                         <div className="flex items-center justify-between pt-4">
                             <div className="flex items-center gap-2 text-sm text-gray-500">
                                 <Truck size={16} />
-                                <span>Free shipping on orders over LKR 5,000</span>
+                                <span>Free shipping on orders over $5,000</span>
                             </div>
                         </div>
                         <div className="flex items-center justify-between">
